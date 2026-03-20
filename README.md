@@ -1,6 +1,23 @@
 # Emucoach MCP Server
 
-A complete local MCP (Model Context Protocol) server for managing an **Emucoach WoW: Mists of Pandaria** private server (V7.0) with MySQL.
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+A complete local **MCP (Model Context Protocol)** server for managing an **Emucoach WoW: Mists of Pandaria** private server (V7.0) with MySQL.
+
+## What Can the Agent Do?
+
+Once connected, an AI agent (Claude, Gemini, Antigravity, OpenClaw, or any MCP-compatible client) gets **full control over your WoW server** through natural language. No need to touch the database, config files, or console manually — just ask.
+
+- 🚀 **Start / stop / restart** MySQL, authserver and worldserver
+- 🗄️ **Query and edit the database** — run any SELECT, INSERT, UPDATE or DELETE
+- 👤 **Manage accounts** — create accounts, set GM levels, grant Donation Points
+- 🧌 **Edit NPCs** — change name, level, health, faction, loot, add vendors, etc.
+- 📜 **Edit quests and items** — update rewards, requirements, stats on the fly
+- ⚙️ **Edit server config** — change rates, caps, realm settings in `worldserver.conf`
+- 📡 **Send any RA command** — anything you'd type in the worldserver console
+- 📊 **Monitor the server** — uptime, online players, DB statistics
+
+> In short: if you can do it in-game as a GM or via the database, the agent can do it for you.
 
 ## Demo Videos
 
@@ -11,6 +28,19 @@ A complete local MCP (Model Context Protocol) server for managing an **Emucoach 
 | ⚙️ Change server rates | [Watch on YouTube](https://youtu.be/qTEbw1xV3S0?si=zb7n_MQpAz94jET_) |
 
 ## Quick Start
+
+> [!IMPORTANT]
+> **Clone this repo into the root folder of your Emucoach repack.** The server paths in `config.json` are relative and rely on this exact layout:
+> ```
+> 📁 YourRepackFolder\
+> ├── 📁 Database\
+> ├── 📁 emucoach-mcp\   ← clone here
+> └── 📁 Repack\
+> ```
+> ```bash
+> cd "C:\path\to\YourRepackFolder"
+> git clone https://github.com/timoinglin/emucoach-mcp.git
+> ```
 
 ### 1. Install & Build (One-Click)
 
@@ -45,10 +75,13 @@ Then restart the worldserver and set the matching credentials in `config.json` u
 
 ### 4. Add to Your AI Client
 
-> **Important:** Replace `<REPACK_PATH>` with the absolute path to your repack folder (e.g. `C:/Games/mop_repack/MOPFREE`). Use forward slashes `/` even on Windows.
+Replace `<REPACK_PATH>` with the absolute path to your repack folder.  
+Use **forward slashes `/`** even on Windows (e.g. `C:/Games/mop_repack/MOPFREE`).
 
-**Antigravity / Gemini (VSCode):**
-Edit your `mcp_config.json`:
+---
+
+**🟣 Antigravity (VSCode extension)**  
+File: `C:\Users\<you>\.gemini\antigravity\mcp_config.json`
 ```json
 {
   "mcpServers": {
@@ -61,8 +94,10 @@ Edit your `mcp_config.json`:
 }
 ```
 
-**Claude Desktop:**
-Edit `claude_desktop_config.json`:
+---
+
+**🟠 Claude Desktop**  
+File: `C:\Users\<you>\AppData\Roaming\Claude\claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
@@ -74,6 +109,15 @@ Edit `claude_desktop_config.json`:
   }
 }
 ```
+
+---
+
+**🔵 VS Code (GitHub Copilot / Cline / OpenClaw / other MCP extensions)**  
+File: `.vscode/mcp.json` inside your project, or via the extension's settings UI — check your extension's docs for the exact location. The JSON block is the same as above.
+
+---
+
+After saving, **restart your AI client** and the `emucoach` server will appear in the available tools list.
 
 ## Available Tools (43 total)
 
