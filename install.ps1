@@ -10,7 +10,7 @@
 $ErrorActionPreference = "Stop"
 $Host.UI.RawUI.WindowTitle = "EmuCoach MCP Installer"
 
-# ─── Colors / helpers ───────────────────────────────────────────────────────
+# --- Colors / helpers ------------------------------------------------------
 function Write-Header {
     Write-Host ""
     Write-Host "============================================" -ForegroundColor Cyan
@@ -44,9 +44,9 @@ Set-Location $scriptDir
 Write-Info "Working directory: $scriptDir"
 Write-Host ""
 
-# ────────────────────────────────────────────────────────────────────────────
-# STEP 1 – Check / Install Node.js
-# ────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------------
+# STEP 1 - Check / Install Node.js
+# ----------------------------------------------------------------------------
 Write-Step "Checking for Node.js..."
 
 $nodeVersion = $null
@@ -102,9 +102,9 @@ if ($nodeVersion -match "^v\d+") {
 }
 Write-Host ""
 
-# ────────────────────────────────────────────────────────────────────────────
-# STEP 2 – Copy example.config.json -> config.json  (skip if already present)
-# ────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------------
+# STEP 2 - Copy example.config.json -> config.json  (skip if already present)
+# ----------------------------------------------------------------------------
 Write-Step "Setting up config.json..."
 
 $exampleConfig = Join-Path $scriptDir "example.config.json"
@@ -117,16 +117,16 @@ if (-not (Test-Path $exampleConfig)) {
 }
 
 if (Test-Path $config) {
-    Write-OK "config.json already exists – skipping copy to preserve your settings."
+    Write-OK "config.json already exists - skipping copy to preserve your settings."
 } else {
     Copy-Item $exampleConfig $config
     Write-OK "config.json created from example.config.json"
 }
 Write-Host ""
 
-# ────────────────────────────────────────────────────────────────────────────
-# STEP 3 – npm install
-# ────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------------
+# STEP 3 - npm install
+# ----------------------------------------------------------------------------
 Write-Step "Installing npm dependencies..."
 Write-Host ""
 
@@ -142,9 +142,9 @@ Write-Host ""
 Write-OK "npm install complete."
 Write-Host ""
 
-# ────────────────────────────────────────────────────────────────────────────
-# STEP 4 – Build (tsc)
-# ────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------------
+# STEP 4 - Build (tsc)
+# ----------------------------------------------------------------------------
 Write-Step "Building TypeScript (npm run build)..."
 Write-Host ""
 
@@ -161,9 +161,9 @@ Write-Host ""
 Write-OK "Build successful! Output is in the 'dist' folder."
 Write-Host ""
 
-# ────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------------
 # DONE
-# ────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------------
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "   Installation Complete!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
