@@ -1,0 +1,35 @@
+{
+  "database": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "ascent",
+    "auth": "mop_auth",
+    "characters": "mop_characters",
+    "world": "mop_world"
+  },
+  "remote_access": {
+    "host": "127.0.0.1",
+    "port": 3443,
+    "username": "replace-with-your-ra-account",
+    "password": "replace-with-your-ra-password",
+    "timeout_seconds": 10
+  },
+  "servers": {
+    "mysql": {
+      "start_script": "../Database/_Server/MySQL.bat",
+      "working_dir": "../Database/_Server",
+      "process_name": "mysqld.exe"
+    },
+    "authserver": {
+      "path": "../Repack/authserver.exe",
+      "working_dir": "../Repack",
+      "process_name": "authserver.exe"
+    },
+    "worldserver": {
+      "path": "../Repack/worldserver.exe",
+      "working_dir": "../Repack",
+      "process_name": "worldserver.exe"
+    }
+  }
+}

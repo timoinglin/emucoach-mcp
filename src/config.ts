@@ -1,0 +1,100 @@
+import { readFileSync, writeFileSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export interface DatabaseConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  auth: string;
+  characters: string;
+  world: string;
+}
+
+export interface RemoteAccessConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  timeout_seconds: number;
+}
+
+export interface ServerProcessConfig {
+  start_script?: string;
+  path?: string;
+  working_dir: string;
+  process_name: string;
+}
+
+export interface ServersConfig {
+  mysql: ServerProcessConfig;
+  authserver: ServerProcessConfig;
+  worldserver: ServerProcessConfig;
+}
+
+export interface AppConfig {
+  database: DatabaseConfig;
+  remote_access: RemoteAccessConfig;
+  servers: ServersConfig;
+}
+
+const CONFIG_PATH = resolve(__dirname, "..", "config.json");
+const EXAMPLE_CONFIG_PATH = resolve(__dirname, "..", "example.config.json");
+
+/** Base directory for resolving relative paths in config */
+export function getBaseDir(): string {
+  return resolve(__dirname, "..");
+}
+
+/** Resolve a relative path from config against the project base dir */
+export function resolveConfigPath(relativePath: string): string {
+  return resolve(getBaseDir(), relativePath);
+}
+
+export function getConfig(): AppConfig {
+  const raw = readFileSync(CONFIG_PATH, "utf-8");
+  return JSON.parse(raw) as AppConfig;
+}
+
+export function updateConfig(patch: Record<string, unknown>): AppConfig {
+  const current = getConfig();
+  const updated = deepMerge(current as unknown as Record<string, unknown>, patch) as unknown as AppConfig;
+  writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2), "utf-8");
+  return updated;
+}
+
+export function resetConfig(): AppConfig {
+  const example = readFileSync(EXAMPLE_CONFIG_PATH, "utf-8");
+  writeFileSync(CONFIG_PATH, example, "utf-8");
+  return JSON.parse(example) as AppConfig;
+}
+
+export function getConfigPath(): string {
+  return CONFIG_PATH;
+}
+
+function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] &&
+      typeof source[key] === "object" &&
+      !Array.isArray(source[key]) &&
+      target[key] &&
+      typeof target[key] === "object" &&
+      !Array.isArray(target[key])
+    ) {
+      result[key] = deepMerge(
+        target[key] as Record<string, unknown>,
+        source[key] as Record<string, unknown>
+      );
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
