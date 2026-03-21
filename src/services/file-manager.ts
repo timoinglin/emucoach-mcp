@@ -1,24 +1,30 @@
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { getBaseDir } from "../config.js";
+import { getBaseDir, getConfig } from "../config.js";
 
 /** Allowed file paths (relative to the project base dir) */
-const ALLOWED_FILES: Record<string, string> = {
-  "config.json": "config.json",
-  "worldserver.conf": "../Repack/worldserver.conf",
-  "authserver.conf": "../Repack/authserver.conf",
-  "my.ini": "../Database/_Server/mysql/my.ini",
-  "my.cnf": "../Database/_Server/mysql/bin/my.cnf",
-};
+function getAllowedFilesMap(): Record<string, string> {
+  const config = getConfig();
+  const cf = config.config_files || {} as any;
+  
+  return {
+    "config.json": "config.json",
+    "worldserver.conf": cf.worldserver_conf || "../Repack/worldserver.conf",
+    "authserver.conf": cf.authserver_conf || "../Repack/authserver.conf",
+    "my.ini": cf.my_ini || "../Database/_Server/mysql/my.ini",
+    "my.cnf": cf.my_cnf || "../Database/_Server/mysql/bin/my.cnf",
+  };
+}
 
 function resolveAllowedPath(fileKey: string): string | null {
-  const relativePath = ALLOWED_FILES[fileKey];
+  const allowed = getAllowedFilesMap();
+  const relativePath = allowed[fileKey];
   if (!relativePath) return null;
   return resolve(getBaseDir(), relativePath);
 }
 
 export function getAllowedFiles(): string[] {
-  return Object.keys(ALLOWED_FILES);
+  return Object.keys(getAllowedFilesMap());
 }
 
 export function readConfigFile(fileKey: string): { success: boolean; content?: string; error?: string } {
@@ -26,7 +32,7 @@ export function readConfigFile(fileKey: string): { success: boolean; content?: s
   if (!absPath) {
     return {
       success: false,
-      error: `File "${fileKey}" is not in the allowed file list. Allowed: ${Object.keys(ALLOWED_FILES).join(", ")}`,
+      error: `File "${fileKey}" is not in the allowed file list. Allowed: ${getAllowedFiles().join(", ")}`,
     };
   }
 
@@ -47,7 +53,7 @@ export function writeConfigFile(
   if (!absPath) {
     return {
       success: false,
-      error: `File "${fileKey}" is not in the allowed file list. Allowed: ${Object.keys(ALLOWED_FILES).join(", ")}`,
+      error: `File "${fileKey}" is not in the allowed file list. Allowed: ${getAllowedFiles().join(", ")}`,
     };
   }
 

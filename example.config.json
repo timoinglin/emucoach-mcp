@@ -31,5 +31,11 @@
       "working_dir": "../Repack",
       "process_name": "worldserver.exe"
     }
+  },
+  "config_files": {
+    "worldserver_conf": "../Repack/worldserver.conf",
+    "authserver_conf": "../Repack/authserver.conf",
+    "my_ini": "../Database/_Server/mysql/my.ini",
+    "my_cnf": "../Database/_Server/mysql/bin/my.cnf"
   }
 }

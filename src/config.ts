@@ -36,10 +36,18 @@ export interface ServersConfig {
   worldserver: ServerProcessConfig;
 }
 
+export interface ConfigFiles {
+  worldserver_conf: string;
+  authserver_conf: string;
+  my_ini: string;
+  my_cnf: string;
+}
+
 export interface AppConfig {
   database: DatabaseConfig;
   remote_access: RemoteAccessConfig;
   servers: ServersConfig;
+  config_files: ConfigFiles;
 }
 
 const CONFIG_PATH = resolve(__dirname, "..", "config.json");

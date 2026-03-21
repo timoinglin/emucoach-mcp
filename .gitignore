@@ -15,3 +15,6 @@ npm-debug.log*
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Database backups
+backups/

@@ -208,4 +208,47 @@ export function registerDatabaseTools(server: McpServer): void {
       }
     }
   );
+
+  server.tool(
+    "create_db_backup",
+    "Create a backup of the database(s) using mysqldump. Supports full database backups or specific tables with WHERE clauses (e.g. for backing up a specific account).",
+    {
+      databases: z.array(dbEnum).describe("Databases to backup: auth, characters, or world"),
+      tables: z.array(z.string()).optional().describe("Specific tables to dump (only valid if exactly one database is selected)"),
+      where_clause: z.string().optional().describe("WHERE clause to filter dumped rows (e.g. 'account = 1') (only applies to the dumped tables)"),
+    },
+    async ({ databases, tables, where_clause }) => {
+      try {
+        if (tables && tables.length > 0 && databases.length > 1) {
+          throw new Error("You can only specify tables when backing up a single database.");
+        }
+        
+        // Dynamic import or function usage from services
+        // Import createDatabaseBackup from database.js
+        const { createDatabaseBackup } = await import("../services/database.js");
+        
+        const backupPath = await createDatabaseBackup(databases as DbName[], tables, where_clause);
+        
+        const details = [];
+        details.push(`Databases: ${databases.join(", ")}`);
+        if (tables && tables.length > 0) details.push(`Tables: ${tables.join(", ")}`);
+        if (where_clause) details.push(`Where: ${where_clause}`);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Backup successfully created at:\n${backupPath}\n\nDetails:\n${details.join("\n")}`,
+            },
+          ],
+        };
+      } catch (err: unknown) {
+        const error = err as Error;
+        return {
+          content: [{ type: "text" as const, text: `Backup error: ${error.message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
 }
