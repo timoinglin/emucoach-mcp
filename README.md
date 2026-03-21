@@ -32,7 +32,7 @@ Once connected, an AI agent (Claude, Gemini, Antigravity, OpenClaw, or any MCP-c
 
 | What | Link |
 |---|---|
-| 🛠️ How to set it up | [Watch on YouTube](https://youtu.be/3Yl2y7r3vKU) |
+| 🛠️ How to set it up | [Watch on YouTube](https://youtu.be/-z8X3xofVEA) |
 | 🛒 Add a vendor to the world | [Watch on YouTube](https://youtu.be/LAPUUya4cBg?si=-Vc6WV5icljwZToh) |
 | ⚔️ Update NPC stats | [Watch on YouTube](https://youtu.be/tQlK2906EP8?si=W6zHoNa8jaXjq31M) |
 | ⚙️ Change server rates | [Watch on YouTube](https://youtu.be/qTEbw1xV3S0?si=zb7n_MQpAz94jET_) |
