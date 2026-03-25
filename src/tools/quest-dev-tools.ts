@@ -161,7 +161,7 @@ export function registerQuestDevTools(server: McpServer): void {
 
         await execute("world",
           `INSERT INTO quest_template
-            (Id, QuestType, QuestLevel, MinLevel, MaxLevel, Title, ObjectiveText1, AreaDescription, RewardXP, RewardMoney)
+            (Id, \`Type\`, Level, MinLevel, MaxLevel, Title, Objectives, AreaDescription, RewardXPId, RewardOrRequiredMoney)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [id, quest_type, level, min_level, max_level, title, quest_info, area_description, reward_xp, reward_money]
         );
@@ -216,11 +216,11 @@ export function registerQuestDevTools(server: McpServer): void {
       try {
         const rows = await query("world",
           `SELECT Id, Title,
-            RewardItem1, RewardAmount1, RewardItem2, RewardAmount2, RewardItem3, RewardAmount3, RewardItem4, RewardAmount4,
+            RewardItemId1, RewardItemCount1, RewardItemId2, RewardItemCount2, RewardItemId3, RewardItemCount3, RewardItemId4, RewardItemCount4,
             RewardChoiceItemId1, RewardChoiceItemCount1, RewardChoiceItemId2, RewardChoiceItemCount2,
             RewardChoiceItemId3, RewardChoiceItemCount3, RewardChoiceItemId4, RewardChoiceItemCount4,
             RewardChoiceItemId5, RewardChoiceItemCount5, RewardChoiceItemId6, RewardChoiceItemCount6,
-            RewardXP, RewardMoney, RewardHonor
+            RewardXPId, RewardOrRequiredMoney, RewardHonor
            FROM quest_template WHERE Id = ?`,
           [quest_id]
         );
@@ -229,8 +229,8 @@ export function registerQuestDevTools(server: McpServer): void {
 
         const guaranteed: string[] = [];
         for (let i = 1; i <= 4; i++) {
-          const item = q[`RewardItem${i}`];
-          const amt = q[`RewardAmount${i}`];
+          const item = q[`RewardItemId${i}`];
+          const amt = q[`RewardItemCount${i}`];
           if (item) guaranteed.push(`  Item ${item} x${amt}`);
         }
         const choices: string[] = [];
@@ -243,7 +243,7 @@ export function registerQuestDevTools(server: McpServer): void {
         return {
           content: [{
             type: "text" as const,
-            text: `Quest [${q.Id}] "${q.Title}" rewards:\n\nGuaranteed Items:\n${guaranteed.length ? guaranteed.join("\n") : "  None"}\n\nChoice Items:\n${choices.length ? choices.join("\n") : "  None"}\n\nXP: ${q.RewardXP} | Money: ${q.RewardMoney} copper | Honor: ${q.RewardHonor}`,
+            text: `Quest [${q.Id}] "${q.Title}" rewards:\n\nGuaranteed Items:\n${guaranteed.length ? guaranteed.join("\n") : "  None"}\n\nChoice Items:\n${choices.length ? choices.join("\n") : "  None"}\n\nXP: ${q.RewardXPId} | Money: ${q.RewardOrRequiredMoney} copper | Honor: ${q.RewardHonor}`,
           }],
         };
       } catch (err: unknown) {
