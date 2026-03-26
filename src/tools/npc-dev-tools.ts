@@ -204,8 +204,8 @@ export function registerNpcDevTools(server: McpServer): void {
     async ({ menu_id }) => {
       try {
         const [menuRows, optRows] = await Promise.all([
-          query("world", "SELECT MenuId, TextId FROM gossip_menu WHERE MenuId = ? LIMIT 20", [menu_id]),
-          query("world", "SELECT MenuId, OptionIndex, OptionNpc, OptionText, OptionBroadcastTextId, ActionMenuId, ActionPoiId FROM gossip_menu_option WHERE MenuId = ? ORDER BY OptionIndex", [menu_id]),
+          query("world", "SELECT entry AS MenuId, text_id AS TextId FROM gossip_menu WHERE entry = ? LIMIT 20", [menu_id]),
+          query("world", "SELECT menu_id AS MenuId, id AS OptionIndex, npc_option_npcflag AS OptionNpc, option_text AS OptionText, OptionBroadcastTextID AS OptionBroadcastTextId, action_menu_id AS ActionMenuId, action_poi_id AS ActionPoiId FROM gossip_menu_option WHERE menu_id = ? ORDER BY id", [menu_id]),
         ]);
         const parts: string[] = [];
         if (menuRows.length > 0) {

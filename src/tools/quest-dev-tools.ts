@@ -147,13 +147,13 @@ export function registerQuestDevTools(server: McpServer): void {
       level: z.number().describe("Recommended level for the quest"),
       min_level: z.number().describe("Minimum level to pick up the quest"),
       max_level: z.number().optional().describe("Maximum level to pick up (0 = no max, default 0)"),
-      quest_type: z.number().optional().describe("Quest type: 0=Normal, 1=Daily, 21=Weekly (default 0)"),
+      type: z.number().optional().describe("Quest type: 0=Normal, 1=Daily, 21=Weekly (default 0)"),
       reward_xp: z.number().optional().describe("XP reward amount (default 0)"),
       reward_money: z.number().optional().describe("Money reward in copper (default 0)"),
       quest_info: z.string().optional().describe("Short description / objective text"),
       area_description: z.string().optional().describe("Area/zone description"),
     },
-    async ({ id, title, level, min_level, max_level = 0, quest_type = 0, reward_xp = 0, reward_money = 0, quest_info = "", area_description = "" }) => {
+    async ({ id, title, level, min_level, max_level = 0, type = 0, reward_xp = 0, reward_money = 0, quest_info = "", area_description = "" }) => {
       try {
         // Check ID not in use
         const existing = await query("world", "SELECT Id FROM quest_template WHERE Id = ?", [id]);
@@ -163,13 +163,13 @@ export function registerQuestDevTools(server: McpServer): void {
           `INSERT INTO quest_template
             (Id, \`Type\`, Level, MinLevel, MaxLevel, Title, Objectives, AreaDescription, RewardXPId, RewardOrRequiredMoney)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, quest_type, level, min_level, max_level, title, quest_info, area_description, reward_xp, reward_money]
+          [id, type, level, min_level, max_level, title, quest_info, area_description, reward_xp, reward_money]
         );
         await sendRaCommand(".reload quest_template");
         return {
           content: [{
             type: "text" as const,
-            text: `Created quest [${id}] "${title}"\n  Level: ${level} (Min: ${min_level}, Max: ${max_level || "none"})\n  Type: ${quest_type}\n  Reward XP: ${reward_xp} | Money: ${reward_money} copper\nQuest template reloaded.\n\nNext steps:\n• Set quest giver: set_quest_giver\n• Set quest ender: set_quest_ender\n• Fine-tune fields: update_quest_template`,
+            text: `Created quest [${id}] "${title}"\n  Level: ${level} (Min: ${min_level}, Max: ${max_level || "none"})\n  Type: ${type}\n  Reward XP: ${reward_xp} | Money: ${reward_money} copper\nQuest template reloaded.\n\nNext steps:\n• Set quest giver: set_quest_giver\n• Set quest ender: set_quest_ender\n• Fine-tune fields: update_quest_template`,
           }],
         };
       } catch (err: unknown) {

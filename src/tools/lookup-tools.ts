@@ -204,10 +204,10 @@ export function registerLookupTools(server: McpServer): void {
         const isNumeric = /^\d+$/.test(search);
         let sql: string; let params: unknown[];
         if (isNumeric) {
-          sql = `SELECT entry, name, \`type\`, faction, size FROM gameobject_template WHERE entry = ? LIMIT ${Number(max)}`;
+          sql = `SELECT entry, name, \`type\`, size FROM gameobject_template WHERE entry = ? LIMIT ${Number(max)}`;
           params = [parseInt(search)];
         } else {
-          sql = `SELECT entry, name, \`type\`, faction, size FROM gameobject_template WHERE name LIKE ? LIMIT ${Number(max)}`;
+          sql = `SELECT entry, name, \`type\`, size FROM gameobject_template WHERE name LIKE ? LIMIT ${Number(max)}`;
           params = [`%${search}%`];
         }
         const rows = await query("world", sql, params);
