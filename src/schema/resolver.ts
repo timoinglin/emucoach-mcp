@@ -13,8 +13,13 @@ export async function initializeSchema(configPath?: string): Promise<SchemaDefin
     try {
       const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       if (data.schema_override) {
-         // Deep merge or replace logic here
-         currentSchema = { ...MoPSchema, ...data.schema_override };
+        // Deep merge of auth and world sub-objects
+        if (data.schema_override.auth) {
+          currentSchema.auth = { ...MoPSchema.auth, ...data.schema_override.auth };
+        }
+        if (data.schema_override.world) {
+          currentSchema.world = { ...MoPSchema.world, ...data.schema_override.world };
+        }
       }
     } catch (err) {
       console.error('Failed to load schema override:', err);
