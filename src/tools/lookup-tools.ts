@@ -3,8 +3,10 @@ import { z } from "zod";
 import { query, execute, type DbName } from "../services/database.js";
 import { sendRaCommand } from "../services/ra-client.js";
 import { getConfig } from "../config.js";
+import { getSchema } from "../schema/resolver.js";
 
 export function registerLookupTools(server: McpServer): void {
+  const schema = getSchema();
   server.tool("search_creature_template",
     "Search NPCs/creatures by name or entry ID in the world database. Returns matching creature templates.",
     {
@@ -17,11 +19,12 @@ export function registerLookupTools(server: McpServer): void {
         const isNumeric = /^\d+$/.test(search);
         let sql: string;
         let params: unknown[];
+        const ct = schema.world.creature_template;
         if (isNumeric) {
-          sql = `SELECT entry, name, subname, minlevel, maxlevel, \`rank\`, \`type\`, faction_A, faction_H FROM creature_template WHERE entry = ? LIMIT ${Number(max)}`;
+          sql = `SELECT ${ct.entry}, ${ct.name}, subname, minlevel, maxlevel, \`rank\`, \`type\`, faction_A, faction_H FROM ${ct.table} WHERE ${ct.entry} = ? LIMIT ${Number(max)}`;
           params = [parseInt(search)];
         } else {
-          sql = `SELECT entry, name, subname, minlevel, maxlevel, \`rank\`, \`type\`, faction_A, faction_H FROM creature_template WHERE name LIKE ? LIMIT ${Number(max)}`;
+          sql = `SELECT ${ct.entry}, ${ct.name}, subname, minlevel, maxlevel, \`rank\`, \`type\`, faction_A, faction_H FROM ${ct.table} WHERE ${ct.name} LIKE ? LIMIT ${Number(max)}`;
           params = [`%${search}%`];
         }
         const rows = await query("world", sql, params);
@@ -38,7 +41,8 @@ export function registerLookupTools(server: McpServer): void {
     { entry: z.number().describe("Creature template entry ID") },
     async ({ entry }) => {
       try {
-        const rows = await query("world", "SELECT * FROM creature_template WHERE entry = ?", [entry]);
+        const ct = schema.world.creature_template;
+        const rows = await query("world", `SELECT * FROM ${ct.table} WHERE ${ct.entry} = ?`, [entry]);
         if (rows.length === 0) return { content: [{ type: "text" as const, text: `Creature entry ${entry} not found.` }], isError: true };
         return { content: [{ type: "text" as const, text: JSON.stringify(rows[0], null, 2) }] };
       } catch (err: unknown) {
@@ -55,13 +59,14 @@ export function registerLookupTools(server: McpServer): void {
     },
     async ({ entry, fields }) => {
       try {
+        const ct = schema.world.creature_template;
         const data = JSON.parse(fields) as Record<string, unknown>;
         const keys = Object.keys(data);
         if (keys.length === 0) return { content: [{ type: "text" as const, text: "No fields provided." }], isError: true };
         const setClause = keys.map(k => `\`${k}\` = ?`).join(", ");
         const vals = [...Object.values(data), entry];
-        const { affectedRows } = await execute("world", `UPDATE creature_template SET ${setClause} WHERE entry = ?`, vals);
-        return { content: [{ type: "text" as const, text: `Updated creature ${entry}. Rows affected: ${affectedRows}.\nRun '.reload creature_template' via RA to apply.` }] };
+        const { affectedRows } = await execute("world", `UPDATE ${ct.table} SET ${setClause} WHERE ${ct.entry} = ?`, vals);
+        return { content: [{ type: "text" as const, text: `Updated creature ${entry}. Rows affected: ${affectedRows}.\nRun '.reload ${ct.table}' via RA to apply.` }] };
       } catch (err: unknown) {
         return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
       }
@@ -79,11 +84,12 @@ export function registerLookupTools(server: McpServer): void {
         const max = limit || 20;
         const isNumeric = /^\d+$/.test(search);
         let sql: string; let params: unknown[];
+        const qt = schema.world.quest_template;
         if (isNumeric) {
-          sql = `SELECT Id, Title, Level, MinLevel, MaxLevel, \`Type\` FROM quest_template WHERE Id = ? LIMIT ${Number(max)}`;
+          sql = `SELECT ${qt.id}, ${qt.title}, ${qt.level}, MinLevel, MaxLevel, \`Type\` FROM ${qt.table} WHERE ${qt.id} = ? LIMIT ${Number(max)}`;
           params = [parseInt(search)];
         } else {
-          sql = `SELECT Id, Title, Level, MinLevel, MaxLevel, \`Type\` FROM quest_template WHERE Title LIKE ? LIMIT ${Number(max)}`;
+          sql = `SELECT ${qt.id}, ${qt.title}, ${qt.level}, MinLevel, MaxLevel, \`Type\` FROM ${qt.table} WHERE ${qt.title} LIKE ? LIMIT ${Number(max)}`;
           params = [`%${search}%`];
         }
         const rows = await query("world", sql, params);
@@ -100,7 +106,8 @@ export function registerLookupTools(server: McpServer): void {
     { id: z.number().describe("Quest ID") },
     async ({ id }) => {
       try {
-        const rows = await query("world", "SELECT * FROM quest_template WHERE Id = ?", [id]);
+        const qt = schema.world.quest_template;
+        const rows = await query("world", `SELECT * FROM ${qt.table} WHERE ${qt.id} = ?`, [id]);
         if (rows.length === 0) return { content: [{ type: "text" as const, text: `Quest ${id} not found.` }], isError: true };
         return { content: [{ type: "text" as const, text: JSON.stringify(rows[0], null, 2) }] };
       } catch (err: unknown) {
@@ -117,13 +124,14 @@ export function registerLookupTools(server: McpServer): void {
     },
     async ({ id, fields }) => {
       try {
+        const qt = schema.world.quest_template;
         const data = JSON.parse(fields) as Record<string, unknown>;
         const keys = Object.keys(data);
         if (keys.length === 0) return { content: [{ type: "text" as const, text: "No fields." }], isError: true };
         const setClause = keys.map(k => `\`${k}\` = ?`).join(", ");
         const vals = [...Object.values(data), id];
-        const { affectedRows } = await execute("world", `UPDATE quest_template SET ${setClause} WHERE Id = ?`, vals);
-        return { content: [{ type: "text" as const, text: `Updated quest ${id}. Rows: ${affectedRows}. Run '.reload quest_template' via RA.` }] };
+        const { affectedRows } = await execute("world", `UPDATE ${qt.table} SET ${setClause} WHERE ${qt.id} = ?`, vals);
+        return { content: [{ type: "text" as const, text: `Updated quest ${id}. Rows: ${affectedRows}. Run '.reload ${qt.table}' via RA.` }] };
       } catch (err: unknown) {
         return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
       }

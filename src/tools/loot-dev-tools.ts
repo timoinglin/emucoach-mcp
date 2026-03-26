@@ -1,8 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { query, execute } from "../services/database.js";
+import { getSchema } from "../schema/resolver.js";
 
 export function registerLootDevTools(server: McpServer): void {
+  const schema = getSchema();
 
   // ---------------------------------------------------------------------------
   // Creature loot
@@ -119,11 +121,12 @@ export function registerLootDevTools(server: McpServer): void {
     },
     async ({ item_id, limit = 20 }) => {
       try {
+        const ct = schema.world.creature_template;
         const rows = await query("world",
-          `SELECT clt.entry AS creature_entry, ct.name AS creature_name,
+          `SELECT clt.entry AS creature_entry, ct.${ct.name} AS creature_name,
                   clt.ChanceOrQuestChance AS chance, clt.mincountOrRef AS min_count, clt.maxcount AS max_count
            FROM creature_loot_template clt
-           LEFT JOIN creature_template ct ON ct.entry = clt.entry
+           LEFT JOIN ${ct.table} ct ON ct.${ct.entry} = clt.entry
            WHERE clt.item = ?
            ORDER BY ABS(clt.ChanceOrQuestChance) DESC
            LIMIT ${Number(limit)}`,

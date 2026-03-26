@@ -13,12 +13,17 @@ import { registerLookupTools } from "./tools/lookup-tools.js";
 import { registerNpcDevTools } from "./tools/npc-dev-tools.js";
 import { registerQuestDevTools } from "./tools/quest-dev-tools.js";
 import { registerLootDevTools } from "./tools/loot-dev-tools.js";
+import { registerSchemaTools } from "./tools/schema-tools.js";
+import { initializeSchema } from "./schema/resolver.js";
 
 async function main(): Promise<void> {
   const server = new McpServer({
     name: "emucoach-mcp",
-    version: "1.1.0",
+    version: "1.2.1",
   });
+
+  // Initialize database schema mapping
+  await initializeSchema();
 
   // Register all tool groups
   registerConfigTools(server);
@@ -28,6 +33,7 @@ async function main(): Promise<void> {
   registerAccountTools(server);
   registerServerConfigTools(server);
   registerLookupTools(server);
+  registerSchemaTools(server);
 
   // Repack development tools
   registerNpcDevTools(server);
@@ -38,7 +44,7 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  console.error("Emucoach MCP Server v1.1.0 started (stdio transport)");
+  console.error("Emucoach MCP Server v1.2.1 started (stdio transport)");
 }
 
 main().catch((err) => {

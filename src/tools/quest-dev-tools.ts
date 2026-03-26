@@ -2,8 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { query, execute } from "../services/database.js";
 import { sendRaCommand } from "../services/ra-client.js";
+import { getSchema } from "../schema/resolver.js";
 
 export function registerQuestDevTools(server: McpServer): void {
+  const schema = getSchema();
 
   // ---------------------------------------------------------------------------
   // Quest relations: who gives / finishes a quest
@@ -17,12 +19,13 @@ export function registerQuestDevTools(server: McpServer): void {
     },
     async ({ quest_id }) => {
       try {
+        const ct = schema.world.creature_template;
         const [cStart, cEnd, goStart, goEnd] = await Promise.all([
           query("world",
-            `SELECT cqs.id AS entry, ct.name FROM creature_queststarter cqs LEFT JOIN creature_template ct ON ct.entry = cqs.id WHERE cqs.quest = ?`,
+            `SELECT cqs.id AS entry, ct.${ct.name} FROM creature_queststarter cqs LEFT JOIN ${ct.table} ct ON ct.${ct.entry} = cqs.id WHERE cqs.quest = ?`,
             [quest_id]),
           query("world",
-            `SELECT cqe.id AS entry, ct.name FROM creature_questender cqe LEFT JOIN creature_template ct ON ct.entry = cqe.id WHERE cqe.quest = ?`,
+            `SELECT cqe.id AS entry, ct.${ct.name} FROM creature_questender cqe LEFT JOIN ${ct.table} ct ON ct.${ct.entry} = cqe.id WHERE cqe.quest = ?`,
             [quest_id]),
           query("world",
             `SELECT gqs.id AS entry, gt.name FROM gameobject_queststarter gqs LEFT JOIN gameobject_template gt ON gt.entry = gqs.id WHERE gqs.quest = ?`,
@@ -67,10 +70,11 @@ export function registerQuestDevTools(server: McpServer): void {
         await execute("world", "INSERT INTO creature_queststarter (id, quest) VALUES (?, ?)", [npc_entry, quest_id]);
 
         // Make sure NPC has QuestGiver flag (npcflag bit 2)
-        await execute("world", "UPDATE creature_template SET npcflag = npcflag | 2 WHERE entry = ? AND (npcflag & 2) = 0", [npc_entry]);
+        const ct = schema.world.creature_template;
+        await execute("world", `UPDATE ${ct.table} SET ${ct.npcflag} = ${ct.npcflag} | 2 WHERE ${ct.entry} = ? AND (${ct.npcflag} & 2) = 0`, [npc_entry]);
 
         await sendRaCommand(".reload creature_queststarter creature_questender");
-        await sendRaCommand(".reload creature_template");
+        await sendRaCommand(`.reload ${ct.table}`);
 
         return { content: [{ type: "text" as const, text: `NPC ${npc_entry} set as quest giver for quest ${quest_id}.\nQuestGiver npcflag ensured.\nTables reloaded.` }] };
       } catch (err: unknown) {
@@ -95,10 +99,11 @@ export function registerQuestDevTools(server: McpServer): void {
         await execute("world", "INSERT INTO creature_questender (id, quest) VALUES (?, ?)", [npc_entry, quest_id]);
 
         // Ensure QuestGiver flag
-        await execute("world", "UPDATE creature_template SET npcflag = npcflag | 2 WHERE entry = ? AND (npcflag & 2) = 0", [npc_entry]);
+        const ct = schema.world.creature_template;
+        await execute("world", `UPDATE ${ct.table} SET ${ct.npcflag} = ${ct.npcflag} | 2 WHERE ${ct.entry} = ? AND (${ct.npcflag} & 2) = 0`, [npc_entry]);
 
         await sendRaCommand(".reload creature_queststarter creature_questender");
-        await sendRaCommand(".reload creature_template");
+        await sendRaCommand(`.reload ${ct.table}`);
 
         return { content: [{ type: "text" as const, text: `NPC ${npc_entry} set as quest ender for quest ${quest_id}.\nQuestGiver npcflag ensured.\nTables reloaded.` }] };
       } catch (err: unknown) {
@@ -155,17 +160,18 @@ export function registerQuestDevTools(server: McpServer): void {
     },
     async ({ id, title, level, min_level, max_level = 0, type = 0, reward_xp = 0, reward_money = 0, quest_info = "", area_description = "" }) => {
       try {
+        const qt = schema.world.quest_template;
         // Check ID not in use
-        const existing = await query("world", "SELECT Id FROM quest_template WHERE Id = ?", [id]);
+        const existing = await query("world", `SELECT ${qt.id} FROM ${qt.table} WHERE ${qt.id} = ?`, [id]);
         if (existing.length > 0) return { content: [{ type: "text" as const, text: `Quest ID ${id} already exists. Choose a different ID.` }], isError: true };
 
         await execute("world",
-          `INSERT INTO quest_template
-            (Id, \`Type\`, Level, MinLevel, MaxLevel, Title, Objectives, AreaDescription, RewardXPId, RewardOrRequiredMoney)
+          `INSERT INTO ${qt.table}
+            (${qt.id}, \`Type\`, ${qt.level}, MinLevel, MaxLevel, ${qt.title}, Objectives, AreaDescription, ${qt.reward_xp}, ${qt.reward_money})
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [id, type, level, min_level, max_level, title, quest_info, area_description, reward_xp, reward_money]
         );
-        await sendRaCommand(".reload quest_template");
+        await sendRaCommand(`.reload ${qt.table}`);
         return {
           content: [{
             type: "text" as const,
@@ -186,14 +192,15 @@ export function registerQuestDevTools(server: McpServer): void {
     },
     async ({ quest_id }) => {
       try {
+        const qt = schema.world.quest_template;
         const [, , , r] = await Promise.all([
           execute("world", "DELETE FROM creature_queststarter WHERE quest = ?", [quest_id]),
           execute("world", "DELETE FROM creature_questender WHERE quest = ?", [quest_id]),
           execute("world", "DELETE FROM gameobject_queststarter WHERE quest = ?", [quest_id]),
-          execute("world", "DELETE FROM quest_template WHERE Id = ?", [quest_id]),
+          execute("world", `DELETE FROM ${qt.table} WHERE ${qt.id} = ?`, [quest_id]),
         ]);
         if (r.affectedRows === 0) return { content: [{ type: "text" as const, text: `Quest ${quest_id} not found.` }], isError: true };
-        await sendRaCommand(".reload quest_template");
+        await sendRaCommand(`.reload ${qt.table}`);
         await sendRaCommand(".reload creature_queststarter creature_questender");
         return { content: [{ type: "text" as const, text: `Deleted quest ${quest_id} and all NPC relations. Tables reloaded.` }] };
       } catch (err: unknown) {
@@ -214,14 +221,15 @@ export function registerQuestDevTools(server: McpServer): void {
     },
     async ({ quest_id }) => {
       try {
+        const qt = schema.world.quest_template;
         const rows = await query("world",
-          `SELECT Id, Title,
+          `SELECT ${qt.id}, ${qt.title},
             RewardItemId1, RewardItemCount1, RewardItemId2, RewardItemCount2, RewardItemId3, RewardItemCount3, RewardItemId4, RewardItemCount4,
             RewardChoiceItemId1, RewardChoiceItemCount1, RewardChoiceItemId2, RewardChoiceItemCount2,
             RewardChoiceItemId3, RewardChoiceItemCount3, RewardChoiceItemId4, RewardChoiceItemCount4,
             RewardChoiceItemId5, RewardChoiceItemCount5, RewardChoiceItemId6, RewardChoiceItemCount6,
-            RewardXPId, RewardOrRequiredMoney, RewardHonor
-           FROM quest_template WHERE Id = ?`,
+            ${qt.reward_xp}, ${qt.reward_money}, RewardHonor
+           FROM ${qt.table} WHERE ${qt.id} = ?`,
           [quest_id]
         );
         if (rows.length === 0) return { content: [{ type: "text" as const, text: `Quest ${quest_id} not found.` }], isError: true };
@@ -243,7 +251,7 @@ export function registerQuestDevTools(server: McpServer): void {
         return {
           content: [{
             type: "text" as const,
-            text: `Quest [${q.Id}] "${q.Title}" rewards:\n\nGuaranteed Items:\n${guaranteed.length ? guaranteed.join("\n") : "  None"}\n\nChoice Items:\n${choices.length ? choices.join("\n") : "  None"}\n\nXP: ${q.RewardXPId} | Money: ${q.RewardOrRequiredMoney} copper | Honor: ${q.RewardHonor}`,
+            text: `Quest [${q[qt.id]}] "${q[qt.title]}" rewards:\n\nGuaranteed Items:\n${guaranteed.length ? guaranteed.join("\n") : "  None"}\n\nChoice Items:\n${choices.length ? choices.join("\n") : "  None"}\n\nXP: ${q[qt.reward_xp]} | Money: ${q[qt.reward_money]} copper | Honor: ${q.RewardHonor}`,
           }],
         };
       } catch (err: unknown) {

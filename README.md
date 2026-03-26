@@ -1,6 +1,6 @@
 # Emucoach MCP Server
 
-[![Version](https://img.shields.io/badge/version-1.2.1-brightgreen.svg)](https://github.com/timoinglin/emucoach-mcp/releases)
+[![Version](https://img.shields.io/badge/version-1.3.0-brightgreen.svg)](https://github.com/timoinglin/emucoach-mcp/releases)
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2.svg)](https://modelcontextprotocol.io)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-18%2B-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org)
@@ -16,7 +16,8 @@ A complete local **[MCP (Model Context Protocol)](https://modelcontextprotocol.i
 - [Why MCP Instead of Raw Credentials?](#why-mcp-instead-of-raw-credentials)
 - [Demo Videos](#demo-videos)
 - [Quick Start](#quick-start)
-- [Available Tools (72 total)](#available-tools-72-total)
+- [Dynamic Schema (Any Expansion)](#dynamic-schema-any-expansion)
+- [Available Tools (76 total)](#available-tools-76-total)
 - [Database Backups](#database-backups)
 - [Updating from an Older Release](#updating-from-an-older-release)
 - [Prerequisites](#prerequisites)
@@ -170,14 +171,28 @@ After saving, **restart your AI client** and the `emucoach` server will appear i
 
 ---
 
-## Available Tools (72 total)
+## Dynamic Schema (Any Expansion)
 
-### Config Management (3)
+The server utilizes a **Dynamic Schema Mapping** system, meaning it can automatically adapt to Mists of Pandaria, Cataclysm, Wrath of the Lich King, or Legion repacks, even when database column names are different.
+
+**To configure the MCP for your specific repack:**
+1. Complete the `Quick Start` connection steps above so the AI can connect to your database.
+2. Ask your AI Assistant to **"Run the `discover_schema` tool"**.
+3. The AI will scan your database (`INFORMATION_SCHEMA`) and generate a `schema_override.json` file perfectly tailored to your repack's database structure.
+4. Tell the AI to update your `config.json` to include `"schemaOverride": "schema_override.json"`.
+5. Restart the AI client, and you are fully compatible!
+
+---
+
+## Available Tools (76 total)
+
+### Config Management (4)
 | Tool | Description |
 |:---|:---|
 | `get_config` | Read current config.json |
 | `update_config` | Update config fields (deep merge) |
 | `reset_config` | Reset to example defaults |
+| `discover_schema` | Auto-detect database structure for custom repacks |
 
 ### Database Access (7)
 | Tool | Description |
@@ -348,6 +363,11 @@ emucoach-mcp/
 ---
 
 ## Changelog
+
+### v1.3.0 (2026-03-26)
+- 🚀 **Dynamic Schema Mapping:** Implemented the `discover_schema` tool to automatically detect and map database structures (WotLK, Cata, Legion, etc.)!
+- ♻️ **Refactored All Tools:** Account, NPC, Quest, Loot, and Lookup tools now fully utilize the dynamic schema resolver.
+- 📝 Added full cross-expansion setup documentation to README.
 
 ### v1.2.1 (2026-03-26)
 - 🐛 Fixed `quest_template` column name mismatches in `get_quest_rewards` and `create_quest`

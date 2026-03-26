@@ -1,9 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { sendRaCommand } from "../services/ra-client.js";
-import { query, execute, type DbName } from "../services/database.js";
+import { query, execute } from "../services/database.js";
+import { getSchema } from "../schema/resolver.js";
 
 export function registerAccountTools(server: McpServer): void {
+  const schema = getSchema();
+
   server.tool(
     "create_account",
     "Create a new game account with username and password via RA command (.account create). The account can then log in to the game.",
@@ -88,10 +91,11 @@ export function registerAccountTools(server: McpServer): void {
     },
     async ({ account_id, dp_amount }) => {
       try {
+        const acc = schema.auth.account;
         // First check if account exists
         const rows = await query(
           "auth",
-          "SELECT id, username, dp FROM account WHERE id = ?",
+          `SELECT ${acc.id}, ${acc.username}, ${acc.dp} FROM ${acc.table} WHERE ${acc.id} = ?`,
           [account_id]
         );
         if (rows.length === 0) {
@@ -101,14 +105,14 @@ export function registerAccountTools(server: McpServer): void {
           };
         }
 
-        const oldDp = rows[0].dp;
-        await execute("auth", "UPDATE account SET dp = ? WHERE id = ?", [dp_amount, account_id]);
+        const oldDp = rows[0][acc.dp];
+        await execute("auth", `UPDATE ${acc.table} SET ${acc.dp} = ? WHERE ${acc.id} = ?`, [dp_amount, account_id]);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `DP updated for account "${rows[0].username}" (ID: ${account_id})\nOld DP: ${oldDp}\nNew DP: ${dp_amount}`,
+              text: `DP updated for account "${rows[0][acc.username]}" (ID: ${account_id})\nOld DP: ${oldDp}\nNew DP: ${dp_amount}`,
             },
           ],
         };
@@ -131,9 +135,10 @@ export function registerAccountTools(server: McpServer): void {
     },
     async ({ account_id, amount }) => {
       try {
+        const acc = schema.auth.account;
         const rows = await query(
           "auth",
-          "SELECT id, username, dp FROM account WHERE id = ?",
+          `SELECT ${acc.id}, ${acc.username}, ${acc.dp} FROM ${acc.table} WHERE ${acc.id} = ?`,
           [account_id]
         );
         if (rows.length === 0) {
@@ -143,15 +148,15 @@ export function registerAccountTools(server: McpServer): void {
           };
         }
 
-        const oldDp = Number(rows[0].dp) || 0;
+        const oldDp = Number(rows[0][acc.dp]) || 0;
         const newDp = oldDp + amount;
-        await execute("auth", "UPDATE account SET dp = ? WHERE id = ?", [newDp, account_id]);
+        await execute("auth", `UPDATE ${acc.table} SET ${acc.dp} = ? WHERE ${acc.id} = ?`, [newDp, account_id]);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `DP updated for "${rows[0].username}" (ID: ${account_id})\nOld: ${oldDp} → New: ${newDp} (${amount >= 0 ? "+" : ""}${amount})`,
+              text: `DP updated for "${rows[0][acc.username]}" (ID: ${account_id})\nOld: ${oldDp} → New: ${newDp} (${amount >= 0 ? "+" : ""}${amount})`,
             },
           ],
         };
@@ -174,15 +179,28 @@ export function registerAccountTools(server: McpServer): void {
     },
     async ({ limit, search }) => {
       try {
+        const acc = schema.auth.account;
+        const access = schema.auth.account_access;
         const maxRows = limit || 50;
-        let sql = "SELECT id, username, gmlevel, dp, email, last_login, online FROM account";
+        
+        let sql = `
+          SELECT 
+            a.${acc.id}, 
+            a.${acc.username}, 
+            ga.${access.gmlevel}, 
+            a.${acc.dp}, 
+            a.${acc.email}, 
+            a.${acc.last_login}
+          FROM ${acc.table} a
+          LEFT JOIN ${access.table} ga ON a.${acc.id} = ga.${access.id}
+        `;
         const params: unknown[] = [];
 
         if (search) {
-          sql += " WHERE username LIKE ?";
+          sql += ` WHERE a.${acc.username} LIKE ?`;
           params.push(`%${search}%`);
         }
-        sql += ` ORDER BY id ASC LIMIT ${Number(maxRows)}`;
+        sql += ` ORDER BY a.${acc.id} ASC LIMIT ${Number(maxRows)}`;
 
         const rows = await query("auth", sql, params);
 
@@ -194,7 +212,7 @@ export function registerAccountTools(server: McpServer): void {
 
         const lines = rows.map(
           (r) =>
-            `[${r.id}] ${r.username} | GM: ${r.gmlevel ?? 0} | DP: ${r.dp ?? 0} | Email: ${r.email || "N/A"} | Online: ${r.online ? "Yes" : "No"} | Last: ${r.last_login || "Never"}`
+            `[${r[acc.id]}] ${r[acc.username]} | GM: ${r[access.gmlevel] ?? 0} | DP: ${r[acc.dp] ?? 0} | Email: ${r[acc.email] || "N/A"} | Last: ${r[acc.last_login] || "Never"}`
         );
 
         return {
@@ -208,7 +226,7 @@ export function registerAccountTools(server: McpServer): void {
       } catch (err: unknown) {
         const error = err as Error;
         return {
-          content: [{ type: "text" as const, text: `Error listing accounts: ${error.message}` }],
+          content: [{ type: "text" as const, text: `Error: ${error.message}` }],
           isError: true,
         };
       }
@@ -223,6 +241,8 @@ export function registerAccountTools(server: McpServer): void {
     },
     async ({ account_id }) => {
       try {
+        // Characters schema not yet implemented in definitions.ts, but we keep hardcoded for POC 
+        // to show we can mix or just focus on auth first.
         const rows = await query(
           "characters",
           "SELECT guid, name, race, class, level, zone, online, totaltime, map FROM characters WHERE account = ? ORDER BY name",

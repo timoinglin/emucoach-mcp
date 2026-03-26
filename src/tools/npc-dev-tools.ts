@@ -3,8 +3,10 @@ import { z } from "zod";
 import { query, execute, type DbName } from "../services/database.js";
 import { sendRaCommand } from "../services/ra-client.js";
 import { getConfig } from "../config.js";
+import { getSchema } from "../schema/resolver.js";
 
 export function registerNpcDevTools(server: McpServer): void {
+  const schema = getSchema();
 
   // ---------------------------------------------------------------------------
   // Spawn / delete
@@ -185,10 +187,11 @@ export function registerNpcDevTools(server: McpServer): void {
     },
     async ({ entry, gossip_menu_id }) => {
       try {
-        const result = await execute("world", "UPDATE creature_template SET gossip_menu_id = ? WHERE entry = ?", [gossip_menu_id, entry]);
+        const ct = schema.world.creature_template;
+        const result = await execute("world", `UPDATE ${ct.table} SET ${ct.gossip_menu_id} = ? WHERE ${ct.entry} = ?`, [gossip_menu_id, entry]);
         if (result.affectedRows === 0) return { content: [{ type: "text" as const, text: `Creature entry ${entry} not found.` }], isError: true };
-        await sendRaCommand(".reload creature_template");
-        return { content: [{ type: "text" as const, text: `Set gossip_menu_id = ${gossip_menu_id} on creature ${entry}. Template reloaded.` }] };
+        await sendRaCommand(`.reload ${ct.table}`);
+        return { content: [{ type: "text" as const, text: `Set ${ct.gossip_menu_id} = ${gossip_menu_id} on creature ${entry}. Template reloaded.` }] };
       } catch (err: unknown) {
         return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
       }
@@ -311,10 +314,11 @@ export function registerNpcDevTools(server: McpServer): void {
     },
     async ({ entry, npc_flags }) => {
       try {
-        const result = await execute("world", "UPDATE creature_template SET npcflag = ? WHERE entry = ?", [npc_flags, entry]);
+        const ct = schema.world.creature_template;
+        const result = await execute("world", `UPDATE ${ct.table} SET ${ct.npcflag} = ? WHERE ${ct.entry} = ?`, [npc_flags, entry]);
         if (result.affectedRows === 0) return { content: [{ type: "text" as const, text: `Creature entry ${entry} not found.` }], isError: true };
-        await sendRaCommand(".reload creature_template");
-        return { content: [{ type: "text" as const, text: `Set npcflag = ${npc_flags} on creature ${entry}. Template reloaded.\nCommon flags: 1=Gossip, 2=QuestGiver, 16=Trainer, 128=Vendor, 4096=FlightMaster` }] };
+        await sendRaCommand(`.reload ${ct.table}`);
+        return { content: [{ type: "text" as const, text: `Set ${ct.npcflag} = ${npc_flags} on creature ${entry}. Template reloaded.\nCommon flags: 1=Gossip, 2=QuestGiver, 16=Trainer, 128=Vendor, 4096=FlightMaster` }] };
       } catch (err: unknown) {
         return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
       }
@@ -331,26 +335,27 @@ export function registerNpcDevTools(server: McpServer): void {
     },
     async ({ source_entry, new_entry, new_name }) => {
       try {
+        const ct = schema.world.creature_template;
         // Check source exists
-        const src = await query("world", "SELECT * FROM creature_template WHERE entry = ?", [source_entry]);
+        const src = await query("world", `SELECT * FROM ${ct.table} WHERE ${ct.entry} = ?`, [source_entry]);
         if (src.length === 0) return { content: [{ type: "text" as const, text: `Source entry ${source_entry} not found.` }], isError: true };
         // Check new entry not in use
-        const existing = await query("world", "SELECT entry FROM creature_template WHERE entry = ?", [new_entry]);
+        const existing = await query("world", `SELECT ${ct.entry} FROM ${ct.table} WHERE ${ct.entry} = ?`, [new_entry]);
         if (existing.length > 0) return { content: [{ type: "text" as const, text: `Entry ${new_entry} already exists.` }], isError: true };
 
         const row = { ...src[0] };
-        delete row.entry;
+        delete row[ct.entry];
         const cols = Object.keys(row);
         const vals = Object.values(row);
 
         // Build INSERT with new entry and name
-        const allCols = ["entry", "name", ...cols.filter(c => c !== "name")];
-        const allVals = [new_entry, new_name, ...vals.filter((_, i) => cols[i] !== "name")];
+        const allCols = [ct.entry, ct.name, ...cols.filter(c => c !== ct.name)];
+        const allVals = [new_entry, new_name, ...vals.filter((_, i) => cols[i] !== ct.name)];
         const placeholders = allCols.map(() => "?").join(", ");
         const colStr = allCols.map(c => `\`${c}\``).join(", ");
 
-        await execute("world", `INSERT INTO creature_template (${colStr}) VALUES (${placeholders})`, allVals);
-        await sendRaCommand(".reload creature_template");
+        await execute("world", `INSERT INTO ${ct.table} (${colStr}) VALUES (${placeholders})`, allVals);
+        await sendRaCommand(`.reload ${ct.table}`);
         return { content: [{ type: "text" as const, text: `Cloned creature template:\n  Source: ${source_entry}\n  New entry: ${new_entry}\n  New name: "${new_name}"\nTemplate reloaded.` }] };
       } catch (err: unknown) {
         return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
